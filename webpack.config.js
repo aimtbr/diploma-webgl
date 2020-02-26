@@ -1,0 +1,125 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
+const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+
+const isProduction = process.env.NODE_ENV === 'production';
+const mode = isProduction ? 'production' : 'development';
+const devtool = isProduction ? false : 'inline-source-map';
+
+module.exports = [
+  {
+    entry: [ 'babel-polyfill', './src/startup.ts'],
+    mode,
+    devtool,
+    output: {
+      path: path.resolve(__dirname, 'build', 'public'),
+      filename: 'client.js',
+      publicPath: '/',
+    },
+    devServer: {
+      contentBase: path.resolve(__dirname, 'src'),
+      host: 'localhost',
+      port: 3000,
+      hot: true,
+      historyApiFallback: true,
+    },
+    resolve: {
+      extensions: [ '*', '.ts', '.js', '.json' ],
+    },
+    plugins: [
+      new HtmlWebpackPlugin({
+        template: './public/index.html',
+      }),
+    ],
+    module: {
+      rules: [
+        {
+          test: /\.ts$/,
+          include: [
+            path.resolve(__dirname, 'src')
+          ],
+          exclude: [
+            path.resolve(__dirname, 'node_modules'),
+            path.resolve(__dirname, 'public')
+          ],
+          use: [
+            {
+              loader: 'babel-loader',
+              options: {
+                presets: [
+                  '@babel/env',
+                  '@babel/typescript',
+                ],
+                plugins: [
+                  '@babel/proposal-class-properties'
+                ]
+              },
+            },
+            {
+              loader: 'ts-loader',
+              options: {
+                transpileOnly: true,
+              },
+            },
+          ],
+        },
+        {
+          test: /\.(png|svg|jpe?g|gif)$/,
+          use: [ 'file-loader' ],
+        },
+        {
+          test: /\.html$/,
+          use: [ 'html-loader' ],
+        },
+      ],
+    },
+  },
+  {
+    entry: './server/server.ts',
+    mode,
+    devtool,
+    target: 'node',
+    module: {
+      rules: [
+        {
+          test: /\.ts$/,
+          include: [
+            path.resolve(__dirname, 'server'),
+          ],
+          exclude: [
+            path.resolve(__dirname, 'node_modules'),
+            path.resolve(__dirname, 'public'),
+          ],
+          use: [
+            {
+              loader: 'babel-loader',
+              options: {
+                presets: [
+                  '@babel/env',
+                  '@babel/typescript',
+                ],
+              },
+            },
+            {
+              loader: 'ts-loader',
+              options: {
+                transpileOnly: true,
+              },
+            }
+          ]
+        }
+      ]
+    },
+    resolve: {
+      extensions: [ '.ts', '.js' ]
+    },
+    output: {
+      filename: 'server.js',
+      path: path.resolve(__dirname, 'build')
+    },
+    node: {
+      __dirname: false,
+      __filename: false,
+    }
+  }
+];
