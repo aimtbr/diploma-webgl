@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-const path = require('path');
+const { resolve } = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 const isProduction = process.env.NODE_ENV === 'production';
 const mode = isProduction ? 'production' : 'development';
@@ -12,12 +13,12 @@ module.exports = [
     mode,
     devtool,
     output: {
-      path: path.resolve(__dirname, 'build', 'public'),
+      path: resolve(__dirname, 'build', 'public'),
       filename: 'client.js',
       publicPath: '/',
     },
     devServer: {
-      contentBase: path.resolve(__dirname, 'src'),
+      contentBase: resolve(__dirname),
       host: 'localhost',
       port: 3000,
       hot: true,
@@ -30,17 +31,18 @@ module.exports = [
       new HtmlWebpackPlugin({
         template: './public/index.html',
       }),
+      new MiniCssExtractPlugin(),
     ],
     module: {
       rules: [
         {
           test: /\.ts$/,
           include: [
-            path.resolve(__dirname, 'src')
+            resolve(__dirname, 'src')
           ],
           exclude: [
-            path.resolve(__dirname, 'node_modules'),
-            path.resolve(__dirname, 'public')
+            resolve(__dirname, 'node_modules'),
+            resolve(__dirname, 'public')
           ],
           use: [
             {
@@ -71,6 +73,21 @@ module.exports = [
           test: /\.html$/,
           use: [ 'html-loader' ],
         },
+        {
+          test: /\.css$/,
+          exclude: [
+            resolve(__dirname, 'node_modules')
+          ],
+          use: [
+            {
+              loader: MiniCssExtractPlugin.loader,
+              options: {
+                hmr: !isProduction
+              }
+            },
+            'css-loader'
+          ]
+        }
       ],
     },
   },
@@ -84,11 +101,11 @@ module.exports = [
         {
           test: /\.ts$/,
           include: [
-            path.resolve(__dirname, 'server'),
+            resolve(__dirname, 'server'),
           ],
           exclude: [
-            path.resolve(__dirname, 'node_modules'),
-            path.resolve(__dirname, 'public'),
+            resolve(__dirname, 'node_modules'),
+            resolve(__dirname, 'public'),
           ],
           use: [
             {
@@ -115,7 +132,7 @@ module.exports = [
     },
     output: {
       filename: 'server.js',
-      path: path.resolve(__dirname, 'build')
+      path: resolve(__dirname, 'build')
     },
     node: {
       __dirname: false,

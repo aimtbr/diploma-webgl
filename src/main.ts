@@ -8,10 +8,10 @@ export const initCanvas = (): void => {
     return;
   }
 
-  const glContext: ReturnType<typeof canvas.getContext> = canvas.getContext('webgl')
-    || canvas.getContext('experimental-webgl');
+  const gl = canvas.getContext('webgl')
+    || canvas.getContext('experimental-webgl') as WebGLRenderingContext;
 
-  if (glContext === null) {
+  if (gl === null) {
     alert('Your browser does not support WebGL!');
     return;
   }
@@ -19,8 +19,11 @@ export const initCanvas = (): void => {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  if ('viewport' in glContext) {
-    glContext.viewport(0, 0, canvas.width, canvas.height);
+  if ('viewport' in gl) {
+    gl.viewport(0, 0, canvas.width, canvas.height);
   }
+
+  gl.clearColor(1.0, 0.75, 1.0, 1.0);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 };
 
