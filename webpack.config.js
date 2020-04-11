@@ -38,7 +38,7 @@ module.exports = [
         {
           test: /\.ts$/,
           include: [
-            resolve(__dirname, 'src')
+            resolve(__dirname, 'src', 'client')
           ],
           exclude: [
             resolve(__dirname, 'node_modules'),
@@ -92,7 +92,7 @@ module.exports = [
     },
   },
   {
-    entry: './server/server.ts',
+    entry: './src/server/server.ts',
     mode,
     devtool,
     target: 'node',
@@ -101,7 +101,7 @@ module.exports = [
         {
           test: /\.ts$/,
           include: [
-            resolve(__dirname, 'server'),
+            resolve(__dirname, 'src', 'server'),
           ],
           exclude: [
             resolve(__dirname, 'node_modules'),
