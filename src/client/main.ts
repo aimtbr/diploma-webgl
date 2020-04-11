@@ -1,7 +1,9 @@
 import { glMatrix, mat4 } from 'gl-matrix';
 
 
-export const initCanvas = (): void | null => {
+// REWORK TO CLASS AND MAKE IT USE ONLY PARTICULAR EVENT HANDLERS 
+
+export const initCanvas = (): WebGLProgram | null => {
   try {
     console.log('Canvas initialization...');
 
@@ -9,15 +11,15 @@ export const initCanvas = (): void | null => {
 
     if (canvas === null) {
       alert('Canvas was not loaded, please try to restart the page');
-      return;
+      return null;
     }
 
     const gl = canvas.getContext('webgl')
       || canvas.getContext('experimental-webgl') as WebGLRenderingContext;
 
     if (gl === null) {
-      alert('Your browser does not support WebGL!');
-      return;
+      alert('Your browser does not support WebGL');
+      return null;
     }
 
     canvas.width = window.innerWidth;
@@ -38,8 +40,10 @@ export const initCanvas = (): void | null => {
     const data = objectData();
 
     bindObjectData(data, gl, program);
-    const worldMatrix = setView(gl, program, canvas);
-    runAnimation(gl, program, worldMatrix);
+    setView(gl, program, canvas);
+		runAnimation(gl, program);
+		
+		return program;
   } catch (error) {
     console.error(error);
     return null;
@@ -105,6 +109,9 @@ const initProgram = (gl: WebGLRenderingContext): WebGLProgram => {
 	if (!gl.getProgramParameter(program, gl.VALIDATE_STATUS)) {
 		throw `Error occurred while validating the program: ${gl.getProgramInfoLog(program)}`;
 	}
+
+	// Tell OpenGL state machine which program should be active.
+	gl.useProgram(program);
   
   return program;
 };
@@ -142,12 +149,9 @@ const bindObjectData = (objectData: { vertices: number[], indices: number[] },
 
 	gl.enableVertexAttribArray(positionAttribLocation);
 	gl.enableVertexAttribArray(colorAttribLocation);
-
-	// Tell OpenGL state machine which program should be active.
-	gl.useProgram(program);
 };
 
-const setView = (gl: WebGLRenderingContext, program: WebGLProgram, canvas: HTMLCanvasElement): Float32Array => {
+const setView = (gl: WebGLRenderingContext, program: WebGLProgram, canvas: HTMLCanvasElement): void => {
   const matWorldUniformLocation = gl.getUniformLocation(program, 'matWorld');
 	const matViewUniformLocation = gl.getUniformLocation(program, 'matView');
 	const matProjectionUniformLocation = gl.getUniformLocation(program, 'matProjection');
@@ -156,31 +160,31 @@ const setView = (gl: WebGLRenderingContext, program: WebGLProgram, canvas: HTMLC
 	let viewMatrix = new Float32Array(16);
 	let projectionMatrix = new Float32Array(16);
 	mat4.identity(worldMatrix);
-	mat4.lookAt(viewMatrix, [-2, 2, -8], [0, 0, 0], [0, 1, 0]);
+	mat4.lookAt(viewMatrix, [-2, 2, -10], [0, 0, 0], [0, 1, 0]);
 	mat4.perspective(projectionMatrix, glMatrix.toRadian(45), canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
 
 	gl.uniformMatrix4fv(matWorldUniformLocation, false, worldMatrix);
 	gl.uniformMatrix4fv(matViewUniformLocation, false, viewMatrix);
   gl.uniformMatrix4fv(matProjectionUniformLocation, false, projectionMatrix);
-
-  return worldMatrix;
 };
 
-const runAnimation = function (gl: WebGLRenderingContext, program: WebGLProgram, worldMatrix: Float32Array) {
-  let angle = 0;
-	let xRotationMatrix = new Float32Array(16);
-  let yRotationMatrix = new Float32Array(16);
+const runAnimation = function (gl: WebGLRenderingContext, program: WebGLProgram): void {
+	// let angle = 0;
+	// let xRotationMatrix = new Float32Array(16);
+	// let yRotationMatrix = new Float32Array(16);
+	let worldMatrix = new Float32Array(16);
   let identityMatrix = new Float32Array(16);
   const { indices } = objectData();
   const matWorldUniformLocation = gl.getUniformLocation(program, 'matWorld');
 
+	mat4.identity(worldMatrix);
   mat4.identity(identityMatrix);
 
 	const loop = function () {
-		angle = performance.now() / 1000 / 10 * 2 * Math.PI;
-		mat4.rotate(yRotationMatrix, identityMatrix, angle, [0, 1, 0]);
-		mat4.rotate(xRotationMatrix, identityMatrix, angle / 4, [1, 0, 0]);
-		mat4.mul(worldMatrix, yRotationMatrix, xRotationMatrix);
+		// angle = performance.now() / 1000 / 10 * 2 * Math.PI;
+		// mat4.rotate(yRotationMatrix, identityMatrix, angle, [0, 1, 0]);
+		// mat4.rotate(xRotationMatrix, identityMatrix, angle / 4, [1, 0, 0]);
+		// mat4.mul(worldMatrix, yRotationMatrix, xRotationMatrix);
 		gl.uniformMatrix4fv(matWorldUniformLocation, false, worldMatrix);
 
     gl.clearColor(...getBackgroundColor(), 1.0);
