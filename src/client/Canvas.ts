@@ -1,12 +1,12 @@
 import { glMatrix, mat4 } from 'gl-matrix';
 
-import {
-	setWheelHandler,
-	mouseDownHandler,
-	mouseUpHandler,
-	mouseOverHandler
-} from './handlers';
-
+// import {
+// 	setWheelHandler,
+// 	mouseDownHandler,
+// 	mouseUpHandler,
+// 	mouseOverHandler
+// } from './handlers';
+import Controller from './Controller';
 
 // REWORK TO CLASS AND MAKE IT USE ONLY PARTICULAR EVENT HANDLERS 
 
@@ -17,8 +17,6 @@ export default class Canvas {
 	private gl: WebGLRenderingContext | null;
 	private program: WebGLProgram | null;
 	private objectData: { vertices: number[], indices: number[] } | null;
-	private clicked: boolean = false;
-	private cursorPosition: { x: number, y: number } | undefined;
 
 	constructor (id: string) {
 		this.id = id;
@@ -98,30 +96,13 @@ export default class Canvas {
 		this.initProgram = this.initProgram.bind(this);
 		this.bindObjectData = this.bindObjectData.bind(this);
 		this.setView = this.setView.bind(this);
-		this.drawObject = this.drawObject.bind(this);
-		this.attachEventHandlers = this.attachEventHandlers.bind(this);
+		this.startDrawLoop = this.startDrawLoop.bind(this);
 
 		try {
 			this.init();
-			this.attachEventHandlers();
 			this.showReadyMessage();
 		} catch (error) {
 			console.error(`${error.message}: [${error.stack}]`);
-		}
-	}
-
-	protected attachEventHandlers (): void {
-		try {
-			if (this.canvas === null) {
-				throw new Error('Canvas is not available');
-			}
-
-			this.canvas.onwheel = setWheelHandler.apply(this);
-			this.canvas.onmousedown = mouseDownHandler.apply(this);
-			this.canvas.onmouseup = mouseUpHandler.apply(this);
-			this.canvas.onmousemove = mouseOverHandler.apply(this);
-		} catch (error) {
-			throw error;
 		}
 	}
 
@@ -131,7 +112,14 @@ export default class Canvas {
 			this.initProgram();
 			this.bindObjectData();
 			this.setView();
-			this.drawObject();
+			this.startDrawLoop();
+			const controller = new Controller(
+				this.program,
+				this.gl, 
+				this.canvas,
+			);
+			controller.enableZoom();
+			controller.enableRotation();
 		} catch (error) {
 			throw error;
 		}
@@ -280,7 +268,7 @@ export default class Canvas {
 		} catch (error) {
 			throw error;
 		}
-	};
+	}
 	
 	protected setView (): void {
 		try {
@@ -306,39 +294,51 @@ export default class Canvas {
 		} catch (error) {
 			throw error;
 		}
-	};
-	
-	protected drawObject (): void {
-		if (this.gl === null || this.program === null || this.objectData === null) {
-			throw new Error('Error occurred while trying to run the animation');
-		}
-
-		// let angle = 0;
-		// let xRotationMatrix = new Float32Array(16);
-		// let yRotationMatrix = new Float32Array(16);
-		let worldMatrix = new Float32Array(16);
-		// let identityMatrix = new Float32Array(16);
-		const { indices } = this.objectData;
-		const matWorldUniformLocation = this.gl.getUniformLocation(this.program, 'matWorld');
-	
-		mat4.identity(worldMatrix);
-		// mat4.identity(identityMatrix);
-	
-		const draw = () => {
-			// angle = performance.now() / 1000 / 10 * 2 * Math.PI;
-			// mat4.rotate(yRotationMatrix, identityMatrix, angle, [0, 1, 0]);
-			// mat4.rotate(xRotationMatrix, identityMatrix, angle / 4, [1, 0, 0]);
-			// mat4.mul(worldMatrix, yRotationMatrix, xRotationMatrix);
-			this.gl.uniformMatrix4fv(matWorldUniformLocation, false, worldMatrix);
-	
-			this.gl.clearColor(...this.backgroundColor, 1.0);
-			this.gl.clear(this.gl.DEPTH_BUFFER_BIT | this.gl.COLOR_BUFFER_BIT);
-			this.gl.drawElements(this.gl.TRIANGLES, indices.length, this.gl.UNSIGNED_SHORT, 0);
-
-			// requestAnimationFrame(loop);
-		};
-		requestAnimationFrame(draw);
 	}
+
+	startDrawLoop (): void {
+    try {
+      if (this.gl === null || this.program === null || this.objectData === null) {
+        throw new Error('Error occurred while trying to draw an object');
+      }
+
+      // let angle = 0;
+      // let xRotationMatrix = new Float32Array(16);
+      // let yRotationMatrix = new Float32Array(16);
+      // let identityMatrix = new Float32Array(16);
+      const { indices } = this.objectData;
+      // const matWorldUniformLocation = this.gl.getUniformLocation(this.program, 'matWorld');
+
+      // if (matWorldUniformLocation === null) {
+      //   throw new Error('Something went wrong while trying to draw an object');
+      // }
+
+      // if (worldMatrix === undefined) {
+      //   worldMatrix = new Float32Array(16);
+      //   mat4.identity(worldMatrix);
+      // }
+      // console.log('MAT', worldMatrix);
+      // // mat4.identity(worldMatrix);
+      // // // mat4.identity(identityMatrix);
+    
+      const draw = () => {
+        // angle = performance.now() / 1000 / 10 * 2 * Math.PI;
+        // mat4.rotate(yRotationMatrix, identityMatrix, angle, [0, 1, 0]);
+        // mat4.rotate(xRotationMatrix, identityMatrix, angle / 4, [1, 0, 0]);
+        // mat4.mul(worldMatrix, yRotationMatrix, xRotationMatrix);
+        // this.gl.uniformMatrix4fv(matWorldUniformLocation, false, worldMatrix);
+    
+        this.gl.clearColor(...this.backgroundColor, 1.0);
+        this.gl.clear(this.gl.DEPTH_BUFFER_BIT | this.gl.COLOR_BUFFER_BIT);
+				this.gl.drawElements(this.gl.TRIANGLES, indices.length, this.gl.UNSIGNED_SHORT, 0);
+				requestAnimationFrame(draw);
+      };
+      
+      requestAnimationFrame(draw);
+    } catch (error) {
+      throw error;
+    }
+  }
 
 	protected showReadyMessage () {
 		console.log('Canvas loaded successfully');
