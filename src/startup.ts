@@ -1,8 +1,8 @@
-import Canvas from './client/Canvas';
+import MainController from './client/MainController';
 
 import '../public/main.css';
 
 window.onload = () => {
-  const canvas = new Canvas('root-canvas');
-  canvas.init();
+  const controller = new MainController();
+  controller.init();
 };

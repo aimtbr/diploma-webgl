@@ -3,3 +3,42 @@ html, body {
   width: 100%;
   margin: 0;
 }
+
+#dropbox-input {
+  display: none;
+}
+
+#dropbox-area {
+  display: flex;
+  position: absolute;
+  z-index: 999;
+  width: 50%;
+  height: 66%;
+  top: 17%;
+  left: 25%;
+  border: 0.4vw dashed #8ec5ca;
+  border-radius: 2vw;
+  background-color: #e8e5eb;
+  text-align: center;
+}
+
+.file-over {
+  background-color: #f6f4f8!important;
+}
+
+#dropbox-label {
+  margin: auto;
+  display: flex;
+  width: 10%;
+  height: 15%;
+  border: 0.14vw dashed gray;
+  border-radius: 0.5vw;
+  font-size: 1.2vw;
+  background-color: #d3d3d3;
+  cursor: pointer;
+  align-items: center;
+}
+
+#dropbox-label:hover {
+  background-color: #ebebeb;
+}

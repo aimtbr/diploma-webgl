@@ -9,7 +9,7 @@ const devtool = isProduction ? false : 'inline-source-map';
 
 module.exports = [
   {
-    entry: [ 'babel-polyfill', './src/startup.ts'],
+    entry: './src/startup.ts',
     mode,
     devtool,
     output: {
@@ -47,15 +47,6 @@ module.exports = [
           use: [
             {
               loader: 'babel-loader',
-              options: {
-                presets: [
-                  '@babel/env',
-                  '@babel/typescript',
-                ],
-                plugins: [
-                  '@babel/proposal-class-properties'
-                ]
-              },
             },
             {
               loader: 'ts-loader',
@@ -110,12 +101,6 @@ module.exports = [
           use: [
             {
               loader: 'babel-loader',
-              options: {
-                presets: [
-                  '@babel/env',
-                  '@babel/typescript',
-                ],
-              },
             },
             {
               loader: 'ts-loader',
