@@ -14,6 +14,7 @@ export default class MainController {
   protected bindMethods (this: MainController) {
     this.init.bind(this);
     this.enableFileUploading.bind(this);
+    this.hideDropBoxArea.bind(this);
   }
 
   init () {
@@ -43,7 +44,6 @@ export default class MainController {
 
       const fileUpload = async (file: File) => {
         const data = new FormData();
-
         data.append('model', file);
 
         const response = await fetch('/upload-model', {
@@ -51,9 +51,13 @@ export default class MainController {
           body: data,
         });
 
-        console.log(response); // parses JSON response into native JavaScript objects
+        const objectData = await response.json();
 
-        // this.canvas.setObjectData(objectData);
+        const setObjectDataResult = this.canvas.setObjectData(objectData);
+
+        if (setObjectDataResult) {
+          this.hideDropBoxArea();
+        }
       };
       const dragOver = (event: DragEvent) => {
         event.stopPropagation();
@@ -97,10 +101,19 @@ export default class MainController {
       dropboxArea.ondrop = dragDrop;
       fileInput.onchange = (event: Event) => {
         const file = event.target.files[0];
-        fileUpload(file); 
+
+        fileUpload(file);
       };
     } catch (error) {
       console.error(error);
+    }
+  }
+
+  hideDropBoxArea () {
+    const dropboxArea = document.getElementById('dropbox-area');
+
+    if (dropboxArea !== null) {
+      dropboxArea.style.display = 'none';
     }
   }
 }

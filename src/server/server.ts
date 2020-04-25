@@ -5,7 +5,7 @@ import express, { Request, Response } from 'express';
 import FileManagement from './routes/handlers/fileManagement';
 
 
-export const UPLOADS_DIR = resolve(__dirname, '..', 'uploads');
+const UPLOADS_DIR = resolve(__dirname, '..', 'uploads');
 const PUBLIC_DIR = resolve(__dirname, 'public');
 const { PORT=3000 } = process.env;
 

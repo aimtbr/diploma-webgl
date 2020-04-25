@@ -1,68 +1,91 @@
-import { readFile, unlink } from 'fs';
+import { promises as fs } from 'fs';
 import { Request, Response } from 'express';
-
-import { UPLOADS_DIR } from '../../server';
 
 
 export default class FileManagement {
   static async uploadFile (req: Request, res: Response): Promise<void> {
     try {
       if (req.file === undefined) {
-        res.status(404).send();
+        res.status(404).send('The file hasn\'t been sent');
       }
 
-      const fileName = req.file.filename;
-      await FileManagement.rawToJSON(fileName);
+      const { path } = req.file;
 
-      res.status(200).send();
-      // if (!req.files) {
-      //   res.send({
-      //     status: false,
-      //     message: 'No file uploaded'
-      //   });
-      // } else {
-      //   //Use the name of the input field (i.e. "avatar") to retrieve the uploaded file
-      //   let avatar = req.files;
-        
-      //   //Use the mv() method to place the file in upload directory (i.e. "uploads")
-      //   avatar.mv('./uploads/' + avatar.name);
+      const objectData = await FileManagement.rawToJSON(path);
 
-      //   //send response
-      //   res.send({
-      //     status: true,
-      //     message: 'File is uploaded',
-      //     data: {
-      //       name: avatar.name,
-      //       mimetype: avatar.mimetype,
-      //       size: avatar.size
-      //     }
-      //   });
-      // }
+      if (objectData !== null) {
+        res.status(200).send(objectData);
+      } else {
+        res.status(500).send('Something went wrong while parsing the input file')
+      }
     } catch (err) {
       res.status(500).send(err);
     }
   }
 
-  static async rawToJSON (fileName: string): Promise<void> {
+  static async rawToJSON (path: string): Promise<object | null> {
     try {
-      let rawData; 
-      const pathToFile = `${UPLOADS_DIR}\\${fileName}`;
+      const fileContentBuffer = await fs.readFile(path);
+      const fileContentString = fileContentBuffer.toString();
+      const objectData = {
+        numOfTrianglesPerElement: 0,
+        numberOfVertices: 0,
+        vertices: [] as number[],
+        numberOfElements: 0,
+        elementsIndices: [] as number[],
+        numberOfOuterTriangles: 0,
+        outerTrianglesIndices: [] as number[],
+      };
 
-      await readFile(pathToFile, (err, data) => {
-        if (err !== null) {
-          console.error(`Error occurred while reading the '${pathToFile}' file`);
+      let numberOfElementsLine = 0;
+      let numberOfOuterTrianglesLine = 0;
+      let lineNumber = 0;
+      let line: number[] = [];
+      let setOfCharacters = '';
+      let character;
+      for (character of fileContentString) {
+        if (character === '\n') {
+          if (setOfCharacters !== '') {
+            line.push(parseInt(setOfCharacters, 10));
+            setOfCharacters = '';
+          }
+
+          lineNumber += 1;
+
+          if (lineNumber === 1) {
+            objectData.numOfTrianglesPerElement = line[0];
+          } else if (lineNumber === 2) {
+            objectData.numberOfVertices = line[0];
+          } else if (lineNumber > 2 && lineNumber < 3 + objectData.numberOfVertices) {
+            objectData.vertices = [ ...objectData.vertices, ...line ];
+          } else if (lineNumber === 3 + objectData.numberOfVertices) {
+            objectData.numberOfElements = line[0];
+            numberOfElementsLine = 4 + objectData.numberOfVertices + line[0];
+          } else if (lineNumber > 3 + objectData.numberOfVertices && lineNumber < numberOfElementsLine) {
+            objectData.elementsIndices = [ ...objectData.elementsIndices, ...line ];
+          } else if (lineNumber === numberOfElementsLine) {
+            objectData.numberOfOuterTriangles = line[0];
+            numberOfOuterTrianglesLine = 1 + numberOfElementsLine + line[0];
+          } else if (lineNumber > numberOfElementsLine && lineNumber < numberOfOuterTrianglesLine) {
+            objectData.outerTrianglesIndices = [ ...objectData.outerTrianglesIndices, ...line ];
+          }
+
+          line = [];
+        } else if (character === ' ') {
+          line.push(parseFloat(setOfCharacters));
+          setOfCharacters = '';
+        } else if (character !== '\r' && (character === '.' || !isNaN(parseFloat(character)))) {
+          setOfCharacters += character;
         }
+      }
 
-        rawData = data;
-      });
+      fs.unlink(path);
 
-      console.log('DATA', rawData);
-
-      unlink(pathToFile, (err) => {
-        console.error(`Error occurred while removing the '${pathToFile}' file`);
-      });
+      return objectData;
     } catch (error) {
       console.error(error);
+
+      return null;
     }
   }
 }

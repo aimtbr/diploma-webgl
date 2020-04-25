@@ -5,14 +5,19 @@ import CanvasController from './CanvasController';
 
 
 interface ObjectData {
-	vertices: number[];
-	indices: number[];
-}
+	numOfTrianglesPerElement: number,
+	numberOfVertices: number,
+	vertices: number[],
+	numberOfElements: number,
+	elementsIndices: number[],
+	numberOfOuterTriangles: number,
+	outerTrianglesIndices: number[],
+};
 
 export default class Canvas {
 	readonly id: string;
 	private backgroundColor: [number, number, number];
-	canvas: HTMLCanvasElement | null = null;
+	canvas: HTMLCanvasElement | null = null; // ADD METHODS THAT RETURN THE PRIVATE FIELDS LIKE THIS (MAKE IT PRIVATE)
 	gl: WebGLRenderingContext | null = null;
 	program: WebGLProgram | null = null;
 	private objectData: ObjectData | null = null;
@@ -24,42 +29,42 @@ export default class Canvas {
 		// 	vertices: [
 		// 		// X, Y, Z           R, G, B
 		// 		// Top
-		// 		-1.0, 1.0, -1.0,   0.5, 0.5, 0.5,
-		// 		-1.0, 1.0, 1.0,    0.5, 0.5, 0.5,
-		// 		1.0, 1.0, 1.0,     0.5, 0.5, 0.5,
-		// 		1.0, 1.0, -1.0,    0.5, 0.5, 0.5,
+		// 		-1.0, 1.0, -1.0,   
+		// 		-1.0, 1.0, 1.0,    
+		// 		1.0, 1.0, 1.0,     
+		// 		1.0, 1.0, -1.0,    
 		
 		// 		// Left
-		// 		-1.0, 1.0, 1.0,    0.75, 0.25, 0.5,
-		// 		-1.0, -1.0, 1.0,   0.75, 0.25, 0.5,
-		// 		-1.0, -1.0, -1.0,  0.75, 0.25, 0.5,
-		// 		-1.0, 1.0, -1.0,   0.75, 0.25, 0.5,
+		// 		-1.0, 1.0, 1.0,    
+		// 		-1.0, -1.0, 1.0,   
+		// 		-1.0, -1.0, -1.0,  
+		// 		-1.0, 1.0, -1.0,   
 		
 		// 		// Right
-		// 		1.0, 1.0, 1.0,    0.25, 0.25, 0.75,
-		// 		1.0, -1.0, 1.0,   0.25, 0.25, 0.75,
-		// 		1.0, -1.0, -1.0,  0.25, 0.25, 0.75,
-		// 		1.0, 1.0, -1.0,   0.25, 0.25, 0.75,
+		// 		1.0, 1.0, 1.0,    
+		// 		1.0, -1.0, 1.0,   
+		// 		1.0, -1.0, -1.0,  
+		// 		1.0, 1.0, -1.0,   
 		
 		// 		// Front
-		// 		1.0, 1.0, 1.0,    1.0, 0.0, 0.15,
-		// 		1.0, -1.0, 1.0,    1.0, 0.0, 0.15,
-		// 		-1.0, -1.0, 1.0,    1.0, 0.0, 0.15,
-		// 		-1.0, 1.0, 1.0,    1.0, 0.0, 0.15,
+		// 		1.0, 1.0, 1.0,    
+		// 		1.0, -1.0, 1.0,    
+		// 		-1.0, -1.0, 1.0,    
+		// 		-1.0, 1.0, 1.0,    
 		
 		// 		// Back
-		// 		1.0, 1.0, -1.0,    0.0, 1.0, 0.15,
-		// 		1.0, -1.0, -1.0,    0.0, 1.0, 0.15,
-		// 		-1.0, -1.0, -1.0,    0.0, 1.0, 0.15,
-		// 		-1.0, 1.0, -1.0,    0.0, 1.0, 0.15,
+		// 		1.0, 1.0, -1.0,    
+		// 		1.0, -1.0, -1.0,    
+		// 		-1.0, -1.0, -1.0,    
+		// 		-1.0, 1.0, -1.0,    
 		
 		// 		// Bottom
-		// 		-1.0, -1.0, -1.0,   0.5, 0.5, 1.0,
-		// 		-1.0, -1.0, 1.0,    0.5, 0.5, 1.0,
-		// 		1.0, -1.0, 1.0,     0.5, 0.5, 1.0,
-		// 		1.0, -1.0, -1.0,    0.5, 0.5, 1.0,
+		// 		-1.0, -1.0, -1.0,   
+		// 		-1.0, -1.0, 1.0,    
+		// 		1.0, -1.0, 1.0,     
+		// 		1.0, -1.0, -1.0,    
 		// 	],
-		// 	indices: [
+		// 	outerTrianglesIndices: [
 		// 		// Top
 		// 		0, 1, 2,
 		// 		0, 2, 3,
@@ -202,12 +207,12 @@ export default class Canvas {
 
 			this.gl.linkProgram(this.program);
 			if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
-				throw new Error(`Error occurred while linking the this.program: ${this.gl.getProgramInfoLog(this.program)}`);
+				throw new Error(`Error occurred while linking the program: ${this.gl.getProgramInfoLog(this.program)}`);
 			}
 
 			this.gl.validateProgram(this.program);
 			if (!this.gl.getProgramParameter(this.program, this.gl.VALIDATE_STATUS)) {
-				throw new Error(`Error occurred while validating the this.program: ${this.gl.getProgramInfoLog(this.program)}`);
+				throw new Error(`Error occurred while validating the program: ${this.gl.getProgramInfoLog(this.program)}`);
 			}
 
 			// Tell OpenGL state machine which program should be active.
@@ -223,9 +228,9 @@ export default class Canvas {
 				throw new Error('Error occurred while trying to bind the object data');
 			}
 
-			const { vertices, indices } = this.objectData;
+			const { vertices, outerTrianglesIndices: indices } = this.objectData;
 			const positionAttribLocation = this.gl.getAttribLocation(this.program, 'vertPosition');
-			const colorAttribLocation = this.gl.getAttribLocation(this.program, 'vertColor');
+			// const colorAttribLocation = this.gl.getAttribLocation(this.program, 'vertColor');
 
 			const boxVertexBufferObject = this.gl.createBuffer();
 			this.gl.bindBuffer(this.gl.ARRAY_BUFFER, boxVertexBufferObject);
@@ -240,20 +245,20 @@ export default class Canvas {
 				3, // Number of elements per attribute
 				this.gl.FLOAT, // Type of elements
 				false,
-				6 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
+				3 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
 				0 // Offset from the beginning of a single vertex to this attribute
 			);
-			this.gl.vertexAttribPointer(
-				colorAttribLocation,
-				3,
-				this.gl.FLOAT,
-				false,
-				6 * Float32Array.BYTES_PER_ELEMENT,
-				3 * Float32Array.BYTES_PER_ELEMENT
-			);
+			// this.gl.vertexAttribPointer(
+			// 	colorAttribLocation,
+			// 	3,
+			// 	this.gl.FLOAT,
+			// 	false,
+			// 	6 * Float32Array.BYTES_PER_ELEMENT,
+			// 	3 * Float32Array.BYTES_PER_ELEMENT
+			// );
 
 			this.gl.enableVertexAttribArray(positionAttribLocation);
-			this.gl.enableVertexAttribArray(colorAttribLocation);
+			// this.gl.enableVertexAttribArray(colorAttribLocation);
 		} catch (error) {
 			throw error;
 		}
@@ -274,7 +279,7 @@ export default class Canvas {
 			let projectionMatrix = new Float32Array(16);
 
 			mat4.identity(worldMatrix);
-			mat4.lookAt(viewMatrix, [-2, 2, -10], [0, 0, 0], [0, 1, 0]);
+			mat4.lookAt(viewMatrix, [-2, 2, -30], [0, 0, 0], [0, 1, 0]);
 			mat4.perspective(projectionMatrix, glMatrix.toRadian(45), this.canvas.clientWidth / this.canvas.clientHeight, 0.1, 1000.0);
 		
 			this.gl.uniformMatrix4fv(matWorldUniformLocation, false, worldMatrix);
@@ -289,62 +294,43 @@ export default class Canvas {
     try {
       if (this.gl === null || this.program === null || this.objectData === null) {
         throw new Error('Error occurred while trying to draw an object');
-      }
-			const { 
-				clear,
-				clearColor,
+			}
+
+			const {
 				DEPTH_BUFFER_BIT,
-				COLOR_BUFFER_BIT, 
+				COLOR_BUFFER_BIT,
 				UNSIGNED_SHORT,
 				TRIANGLES,
-				drawElements, 
 			} = this.gl;
-      // let angle = 0;
-      // let xRotationMatrix = new Float32Array(16);
-      // let yRotationMatrix = new Float32Array(16);
-      // let identityMatrix = new Float32Array(16);
-      const { indices } = this.objectData;
-      // const matWorldUniformLocation = this.gl.getUniformLocation(this.program, 'matWorld');
+			const { outerTrianglesIndices: indices } = this.objectData;
 
-      // if (matWorldUniformLocation === null) {
-      //   throw new Error('Something went wrong while trying to draw an object');
-      // }
-
-      // if (worldMatrix === undefined) {
-      //   worldMatrix = new Float32Array(16);
-      //   mat4.identity(worldMatrix);
-      // }
-      // console.log('MAT', worldMatrix);
-      // // mat4.identity(worldMatrix);
-      // // // mat4.identity(identityMatrix);
-    
       const draw = () => {
-        // angle = performance.now() / 1000 / 10 * 2 * Math.PI;
-        // mat4.rotate(yRotationMatrix, identityMatrix, angle, [0, 1, 0]);
-        // mat4.rotate(xRotationMatrix, identityMatrix, angle / 4, [1, 0, 0]);
-        // mat4.mul(worldMatrix, yRotationMatrix, xRotationMatrix);
-        // this.gl.uniformMatrix4fv(matWorldUniformLocation, false, worldMatrix);
-    
-        clearColor(...this.backgroundColor, 1.0);
-        clear(DEPTH_BUFFER_BIT | COLOR_BUFFER_BIT);
-				drawElements(TRIANGLES, indices.length, UNSIGNED_SHORT, 0);
+        this.gl!.clearColor(...this.backgroundColor, 1.0);
+        this.gl!.clear(DEPTH_BUFFER_BIT | COLOR_BUFFER_BIT);
+				this.gl!.drawElements(TRIANGLES, indices.length, UNSIGNED_SHORT, 0);
 
 				requestAnimationFrame(draw);
-      };
-      
+			};
+
       requestAnimationFrame(draw);
     } catch (error) {
       throw error;
     }
 	}
 	
-	setObjectData (objectData: ObjectData) {
+	setObjectData (objectData: ObjectData): boolean | null {
 		try {
-			this.objectData = objectData;
+			if (Object.keys(objectData).length) {
+				this.objectData = objectData;
+			}
 
 			this.init();
+
+			return true;
 		} catch (error) {
 			console.error(`${error.message}: [${error.stack}]`);
+
+			return null;
 		}
 	}
 }
