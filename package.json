@@ -1,10 +1,10 @@
 {
   "name": "diploma-webgl",
   "version": "1.0.0",
-  "description": "",
+  "description": "Visualization of Phase Variable Distribution using WebGL API",
   "scripts": {
-    "start": "npm run build production && node ./build/server.js",
-    "dev": "webpack-dev-server",
+    "dev:server": "npm run build development && node ./build/server.js",
+    "dev:client": "webpack-dev-server",
     "build": "webpack --mode"
   },
   "repository": {
@@ -12,7 +12,8 @@
     "url": "https://github.com/aimtbr/diploma-webgl.git"
   },
   "keywords": [
-    "webgl"
+    "webgl",
+    "express"
   ],
   "author": "Maxim Marchuk",
   "license": "MIT",
