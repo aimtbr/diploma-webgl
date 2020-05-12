@@ -1,8 +1,8 @@
-import MainController from './client/MainController';
+import PageController from './client/PageController';
 
 import '../public/main.css';
 
 window.onload = () => {
-  const controller = new MainController();
+  const controller = new PageController();
   controller.init();
 };
