@@ -1,4 +1,4 @@
-import { mat4 } from "gl-matrix";
+import { mat4, vec3 } from "gl-matrix";
 import Canvas, { ObjectData } from "./Canvas";
 
 export default class CanvasController {
@@ -109,7 +109,7 @@ export default class CanvasController {
 
           mat4.rotate(yRotationMatrix, identityMatrix, angleX, [0, 1, 0]);
           mat4.rotate(xRotationMatrix, identityMatrix, angleY, [1, 0, 0]);
-          mat4.mul(worldMatrix, yRotationMatrix, xRotationMatrix);
+          mat4.mul(worldMatrix, xRotationMatrix, yRotationMatrix);
 
           gl.uniformMatrix4fv(matWorldUniformLocation, false, worldMatrix);
         }
@@ -128,6 +128,17 @@ export default class CanvasController {
       }
 
       const { vertNormal: vertNormalLocation } = programInfo.attribLocations;
+      const {
+        ambientLightIntensity: ambientLightIntensityUL,
+        sunlightIntensity: sunlightIntensityUL,
+        sunlightDirection: sunlightDirectionUL,
+      } = programInfo.uniformLocations;
+
+      const ambientLightIntensity = [0.1, 0.1, 0.3];
+      const sunlightIntensity = [1, 1, 1];
+      const sunlightDirection = new Float32Array([-1.5, 1.75, -3]); // type cast of number[] to Float32Array
+      let normalizedSunlightDirection = vec3.normalize(new Float32Array(3), sunlightDirection);
+
       const vertexNormals = this.generateNormals(objectData);
 
       if (vertexNormals === null) {
@@ -137,7 +148,6 @@ export default class CanvasController {
       const normalBuffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
-
       gl.vertexAttribPointer(
 				vertNormalLocation, // Attribute location
 				3, // Number of elements per attribute
@@ -146,9 +156,12 @@ export default class CanvasController {
 				3 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
 				0 // Offset from the beginning of a single vertex to this attribute
 			);
-
       gl.enableVertexAttribArray(vertNormalLocation);
-      // CONTINUE ENABLING THE LIGHTING FEATURE...
+
+      // pass the lighting configuration to a shader
+      gl.uniform3fv(ambientLightIntensityUL, ambientLightIntensity);
+      gl.uniform3fv(sunlightIntensityUL, sunlightIntensity);
+      gl.uniform3fv(sunlightDirectionUL, normalizedSunlightDirection);
     } catch (error) {
       console.error(error);
     }
@@ -187,8 +200,7 @@ export default class CanvasController {
         0.0,  0.0, -1.0,
         0.0,  0.0, -1.0,
         0.0,  0.0, -1.0,
-    
-    
+
         // Bottom
         0.0, -1.0,  0.0,
         0.0, -1.0,  0.0,
