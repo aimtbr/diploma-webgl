@@ -1,37 +1,20 @@
+import Cube from "./models/defaultCube.json";
 import Canvas from "./Canvas/Canvas";
 
 export default class PageController {
   canvas: Canvas | null = null;
 
-  constructor () {
-    try {
-      this.bindMethods.apply(this);
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  protected bindMethods (this: PageController) {
-    this.init.bind(this);
-    this.enableFileUploading.bind(this);
-    this.hideDropBoxArea.bind(this);
-  }
-
   init () {
     try {
       this.canvas = new Canvas('root-canvas');
-      this.canvas.init();
-      // this.enableFileUploading(); // TEMP
+      // this.openPlayground();
+      this.enableFileUploading();
     } catch (error) {
       console.error('Error occurred while initializing the PageController');
     }
   }
 
-  // addCanvas (name: string) {
-  //   const canvas = new Canvas(name);
-
-  //   this.canvases.push(canvas);
-  // }
+  
 
   protected enableFileUploading () {
     try {
@@ -57,7 +40,7 @@ export default class PageController {
         const setObjectDataResult = this.canvas.setObjectData(objectData);
 
         if (setObjectDataResult) {
-          this.hideDropBoxArea();
+          PageController.hideDropBoxArea();
         }
       };
       const dragOver = (event: DragEvent) => {
@@ -110,11 +93,21 @@ export default class PageController {
     }
   }
 
-  hideDropBoxArea () {
+  static hideDropBoxArea () {
     const dropboxArea = document.getElementById('dropbox-area');
 
     if (dropboxArea !== null) {
       dropboxArea.style.display = 'none';
+    }
+  }
+
+  openPlayground (): void {
+    try {
+      PageController.hideDropBoxArea();
+
+      this.canvas.setObjectData(Cube);
+    } catch (error) {
+      console.error(error);
     }
   }
 }

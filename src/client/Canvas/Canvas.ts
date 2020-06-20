@@ -4,14 +4,15 @@ import CanvasController from './CanvasController';
 
 
 export interface ObjectData {
-	// numOfTrianglesPerElement: number, // TEMP
-	// numberOfVertices: number,
+	numOfTrianglesPerElement?: number, // TEMP
+	numberOfVertices?: number,
 	vertices: number[],
-	// numberOfElements: number,
-	// elementsIndices: number[],
-	// numberOfOuterTriangles: number,
+	numberOfElements?: number,
+	elementsIndices?: number[],
+	numberOfOuterTriangles?: number,
 	outerTrianglesIndices: number[],
-	colors: number[],
+	colors?: number[],
+	normals?: number[],
 };
 
 interface ProgramInfo {
@@ -26,7 +27,7 @@ interface ProgramInfo {
 export default class Canvas {
 	readonly id: string;
 	private backgroundColor: [number, number, number];
-	canvas: HTMLCanvasElement | null = null; // ADD METHODS THAT RETURN THE PRIVATE FIELDS LIKE THIS (MAKE IT PRIVATE)
+	canvas: HTMLCanvasElement | null = null;
 	gl: WebGLRenderingContext | null = null;
 	program: WebGLProgram | null = null;
 	objectData: ObjectData | null = null;
@@ -37,110 +38,7 @@ export default class Canvas {
 
 	constructor (id: string) {
 		this.id = id;
-		this.backgroundColor = [0.7, 0.7, 0.7];
-
-		this.objectData = {
-			vertices: [
-				// X, Y, Z
-				// Top
-				-1.0, 1.0, -1.0,
-				-1.0, 1.0, 1.0,
-				1.0, 1.0, 1.0,
-				1.0, 1.0, -1.0,
-
-				// Left
-				-1.0, 1.0, 1.0,
-				-1.0, -1.0, 1.0,
-				-1.0, -1.0, -1.0,
-				-1.0, 1.0, -1.0,
-
-				// Right
-				1.0, 1.0, 1.0,
-				1.0, -1.0, 1.0,
-				1.0, -1.0, -1.0,
-				1.0, 1.0, -1.0,
-
-				// Front
-				1.0, 1.0, 1.0,
-				1.0, -1.0, 1.0,
-				-1.0, -1.0, 1.0,
-				-1.0, 1.0, 1.0,
-
-				// Back
-				1.0, 1.0, -1.0,
-				1.0, -1.0, -1.0,
-				-1.0, -1.0, -1.0,
-				-1.0, 1.0, -1.0,
-
-				// Bottom
-				-1.0, -1.0, -1.0,
-				-1.0, -1.0, 1.0,
-				1.0, -1.0, 1.0,
-				1.0, -1.0, -1.0,
-			],
-			outerTrianglesIndices: [
-				// Top
-				0, 1, 2,
-				0, 2, 3,
-		
-				// Left
-				5, 4, 6,
-				6, 4, 7,
-		
-				// Right
-				8, 9, 10,
-				8, 10, 11,
-		
-				// Front
-				13, 12, 14,
-				15, 14, 12,
-		
-				// Back
-				16, 17, 18,
-				16, 18, 19,
-		
-				// Bottom
-				21, 20, 22,
-				22, 20, 23
-			],
-			colors: [
-				// Top
-				0.5, 0.5, 0.5,
-				0.5, 0.5, 0.5,
-				0.5, 0.5, 0.5,
-				0.5, 0.5, 0.5,
-
-				// Left
-				0.75, 0.25, 0.5,
-				0.75, 0.25, 0.5,
-				0.75, 0.25, 0.5,
-				0.75, 0.25, 0.5,
-		
-				// Right
-				0.25, 0.25, 0.75,
-				0.25, 0.25, 0.75,
-				0.25, 0.25, 0.75,
-				0.25, 0.25, 0.75,
-
-				// Front
-				1.0, 0.0, 0.15,
-				1.0, 0.0, 0.15,
-				1.0, 0.0, 0.15,
-				1.0, 0.0, 0.15,
-
-				// Back
-				0.0, 1.0, 0.15,
-				0.0, 1.0, 0.15,
-				0.0, 1.0, 0.15,
-				0.0, 1.0, 0.15,
-
-				// Bottom
-				0.5, 0.5, 1.0,
-				0.5, 0.5, 1.0,
-				0.5, 0.5, 1.0,
-				0.5, 0.5, 1.0,
-			]
-		};
+		this.backgroundColor = [0.8, 0.8, 0.8];
 
 		this.bindMethods.apply(this);
 	}
@@ -156,7 +54,6 @@ export default class Canvas {
 		this.writeProgramInfo = this.writeProgramInfo.bind(this);
 	}
 
-	// protected init (): void {
 	init (): void {
 		try {
 			this.initCanvas();
@@ -199,9 +96,9 @@ export default class Canvas {
 			this.gl.clearColor(...this.backgroundColor, 1.0);
 			this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 			this.gl.enable(this.gl.DEPTH_TEST);
-			this.gl.enable(this.gl.CULL_FACE);
-			this.gl.frontFace(this.gl.CCW);
-			this.gl.cullFace(this.gl.BACK);
+			// this.gl.enable(this.gl.CULL_FACE);
+			// this.gl.frontFace(this.gl.CCW);
+			// this.gl.cullFace(this.gl.BACK);
 		} catch (error) {
 			throw error;
 		}
@@ -216,7 +113,7 @@ export default class Canvas {
 			const vertexShaderCode = `
 				precision mediump float;
 		
-				attribute vec3 vertPosition;
+				attribute highp vec3 vertPosition;
 				attribute vec3 vertColor;
 				attribute vec3 vertNormal;
 
@@ -248,13 +145,9 @@ export default class Canvas {
 		
 				void main()
 				{
-					// vec3 ambientLightIntensity = vec3(0.1, 0.1, 0.3);
-					// vec3 sunlightIntensity = vec3(1.0, 1.0, 1.0);
-					// vec3 sunlightDirection = normalize(vec3(-1.5, 1.75, -3.0));
-					// vec3 normalizedSunlightDirection = normalize(sunlightDirection);
 					vec3 lighting = ambientLightIntensity + sunlightIntensity * max(dot(fragNormal, sunlightDirection), 0.0);
 
-					gl_FragColor = vec4(lighting, 1.0);
+					gl_FragColor = vec4(fragColor * lighting, 1.0);
 				}
 			`;
 
@@ -303,19 +196,19 @@ export default class Canvas {
 				throw new Error('Error occurred while trying to bind the object data');
 			}
 
-			const { vertices, outerTrianglesIndices: indices } = this.objectData;
+			const { vertices, outerTrianglesIndices: indices, colors } = this.objectData;
 			const {
 				vertPosition: vertPositionLocation,
-				// vertColor: colorAttribLocation,
+				vertColor: colorAttribLocation,
 			} = this.programInfo.attribLocations;
-
-			const vertexBufferObject = this.gl.createBuffer();
-			this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBufferObject);
-			this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
 
 			const indexBufferObject = this.gl.createBuffer();
 			this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indexBufferObject);
 			this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), this.gl.STATIC_DRAW);
+			
+			const vertexBufferObject = this.gl.createBuffer();
+			this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBufferObject);
+			this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
 
 			this.gl.vertexAttribPointer(
 				vertPositionLocation, // Attribute location
@@ -325,24 +218,23 @@ export default class Canvas {
 				3 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
 				0 // Offset from the beginning of a single vertex to this attribute
 			);
-
-			// const colorsBufferObject = this.gl.createBuffer();
-			// this.gl.bindBuffer(this.gl.ARRAY_BUFFER, colorsBufferObject);
-			// this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(colors), this.gl.STATIC_DRAW);
-
-			// this.gl.vertexAttribPointer(
-			// 	colorAttribLocation,
-			// 	3,
-			// 	this.gl.FLOAT,
-			// 	false,
-			// 	6 * Float32Array.BYTES_PER_ELEMENT,
-			// 	3 * Float32Array.BYTES_PER_ELEMENT,
-			// );
-
-			// PASS AN EMPTY COLORS ARRAY TO vertColor attribute in a shader
-
 			this.gl.enableVertexAttribArray(vertPositionLocation);
-			// this.gl.enableVertexAttribArray(colorAttribLocation);
+
+			if (colors) {
+				const colorsBufferObject = this.gl.createBuffer();
+				this.gl.bindBuffer(this.gl.ARRAY_BUFFER, colorsBufferObject);
+				this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(colors), this.gl.STATIC_DRAW);
+
+				this.gl.vertexAttribPointer(
+					colorAttribLocation,
+					3,
+					this.gl.FLOAT,
+					false,
+					3 * Float32Array.BYTES_PER_ELEMENT,
+					0,
+				);
+				this.gl.enableVertexAttribArray(colorAttribLocation);
+			}
 		} catch (error) {
 			throw error;
 		}
@@ -364,7 +256,7 @@ export default class Canvas {
 			let projectionMatrix = new Float32Array(16);
 
 			mat4.identity(worldMatrix);
-			mat4.lookAt(viewMatrix, [-3, 2, -10], [0, 0, 0], [0, 1, 0]);
+			mat4.lookAt(viewMatrix, [-3, 2, -15], [0, 0, 0], [0, 1, 0]);
 			mat4.perspective(projectionMatrix, glMatrix.toRadian(45), this.canvas.clientWidth / this.canvas.clientHeight, 0.1, 1000.0);
 		
 			this.gl.uniformMatrix4fv(matWorldUniformLocation, false, worldMatrix);
@@ -391,7 +283,7 @@ export default class Canvas {
 
       const draw = () => {
         this.gl!.clearColor(...this.backgroundColor, 1.0);
-        this.gl!.clear(DEPTH_BUFFER_BIT | COLOR_BUFFER_BIT);
+				this.gl!.clear(DEPTH_BUFFER_BIT | COLOR_BUFFER_BIT);
 				this.gl!.drawElements(TRIANGLES, indices.length, UNSIGNED_SHORT, 0);
 
 				requestAnimationFrame(draw);
@@ -430,8 +322,7 @@ export default class Canvas {
 			console.error(`${message} [${stack}]`);
 		}
 	}
-	
-	// TEMPORARY DISABLED
+
 	setObjectData (objectData: ObjectData): boolean | null {
 		try {
 			if (Object.keys(objectData).length) {

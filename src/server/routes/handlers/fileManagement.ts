@@ -1,3 +1,4 @@
+import { vec3 } from 'gl-matrix';
 import { promises as fs } from 'fs';
 import { Request, Response } from 'express';
 
@@ -35,6 +36,32 @@ export default class FileManagement {
         elementsIndices: [] as number[],
         numberOfOuterTriangles: 0,
         outerTrianglesIndices: [] as number[],
+        normals: [] as number[],
+      };
+
+      const calculateTriangleNormal = (triangleVertices: number[][]): number[] => {
+        const [x, y, z] = [0, 1, 2]; // aliases of indices of each vector
+        const [vertexA, vertexB, vertexC] = triangleVertices;
+
+        const firstVector = [ vertexB[x] - vertexA[x], vertexB[y] - vertexA[y], vertexB[z] - vertexA[z] ];
+        const secondVector = [ vertexC[x] - vertexA[x], vertexC[y] - vertexA[y], vertexC[z] - vertexA[z] ];
+
+        // cross product of vectors
+        const [ crossX, crossY, crossZ ] = [
+          (firstVector[y] * secondVector[z]) - (firstVector[z] * secondVector[y]), // X
+          (firstVector[z] * secondVector[x]) - (firstVector[x] * secondVector[z]), // Y
+          (firstVector[x] * secondVector[y]) - (firstVector[y] * secondVector[x]), // Z
+        ];
+
+        const normalizationValue = Math.sqrt(crossX ** 2 + crossY ** 2 + crossZ ** 2);
+        const normal = [
+          crossX / normalizationValue,
+          crossY / normalizationValue,
+          crossZ / normalizationValue,
+        ];
+
+
+        return normal;
       };
 
       let numberOfElementsLine = 0;
@@ -46,7 +73,7 @@ export default class FileManagement {
       for (character of fileContentString) {
         if (character === '\n') {
           if (setOfCharacters !== '') {
-            line.push(parseInt(setOfCharacters, 10));
+            line.push(parseFloat(setOfCharacters));
             setOfCharacters = '';
           }
 
@@ -68,13 +95,30 @@ export default class FileManagement {
             numberOfOuterTrianglesLine = 1 + numberOfElementsLine + line[0];
           } else if (lineNumber > numberOfElementsLine && lineNumber < numberOfOuterTrianglesLine) {
             objectData.outerTrianglesIndices = [ ...objectData.outerTrianglesIndices, ...line ];
+
+            const outerTriangleVerticesCoords = line.reduce((accumulator: number[][], currentValue) => {
+              const coordsLastIndex = currentValue * 3;
+              const [ xIndex, yIndex, zIndex ] = [ coordsLastIndex, coordsLastIndex + 1, coordsLastIndex + 2 ];
+
+              const x = objectData.vertices[xIndex];
+              const y = objectData.vertices[yIndex];
+              const z = objectData.vertices[zIndex];
+
+              const vertexCoords = [ x, y, z ];
+
+              return [ ...accumulator, vertexCoords ];
+            }, []);
+
+            const outerTriangleNormals = calculateTriangleNormal(outerTriangleVerticesCoords);
+
+            objectData.normals.push(...outerTriangleNormals);
           }
 
           line = [];
         } else if (character === ' ') {
           line.push(parseFloat(setOfCharacters));
           setOfCharacters = '';
-        } else if (character !== '\r' && (character === '.' || !isNaN(parseFloat(character)))) {
+        } else if (character === '.' || (character !== '\r' && !isNaN(parseFloat(character)))) {
           setOfCharacters += character;
         }
       }

@@ -29,12 +29,15 @@ html, body {
 #dropbox-label {
   margin: auto;
   display: flex;
-  width: 10%;
+  width: 7vw;
   height: 15%;
+  min-width: 24px;
+  min-height: 30px;
   border: 0.14vw dashed gray;
   border-radius: 0.5vw;
-  font-size: 1.2vw;
+  font-size: calc((1.2vw + 1.2vh) * 0.7);
   background-color: #d3d3d3;
+  justify-content: center;
   cursor: pointer;
   align-items: center;
 }

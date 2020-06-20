@@ -1,10 +1,11 @@
 import { mat4, vec3 } from "gl-matrix";
-import Canvas, { ObjectData } from "./Canvas";
+
+import Canvas from "./Canvas";
 
 export default class CanvasController {
   private clicked: boolean = false;
   private cursorPosition: { x: number, y: number } = { x: 0, y: 0 };
-  private tiltAngle: { x: number, y: number } = { x: 0, y: 0 };
+  private rotationAngle: { x: number, y: number } = { x: 0, y: 0 };
   // private canvas!: HTMLCanvasElement;
 	// private gl!: WebGLRenderingContext;
   // private program!: WebGLProgram;
@@ -28,7 +29,7 @@ export default class CanvasController {
     this.enableZoom = this.enableZoom.bind(this);
     this.enableRotation = this.enableRotation.bind(this);
     this.enableLighting = this.enableLighting.bind(this);
-    this.generateNormals = this.generateNormals.bind(this);
+    // this.translateModelToCenter = this.translateModelToCenter.bind(this);
   }
 
   async enableZoom (zoomStep = 0.71, minDistance = -10, maxDistance = -30): Promise<void> {
@@ -66,11 +67,22 @@ export default class CanvasController {
 
   async enableRotation (): Promise<void> {
     try {
-      const { canvas, program, gl } = this.canvasInstance;
+      const { canvas, program, gl, programInfo } = this.canvasInstance;
+      const fullTurnAngle = 6.2; // USE IT WHEN ADJUSTING THE ANGLE
+      const defaultRotationAngleStep = 0.005;
 
       if (canvas === null || program === null || gl === null) {
         throw new Error('One of the required properties is null');
       }
+
+      // const adjustRotationAngle = (angle) => {
+      //   const absAngle = Math.abs(angle);
+      //   if (absAngle > fullTurnAngle) {
+      //     const angleDifference = Math.floor(absAngle / fullTurnAngle) * fullTurnAngle;
+
+
+      //   }
+      // };
 
       // signals that user is trying to rotate an object
       canvas.onmousedown = (event: MouseEvent): void => {
@@ -85,18 +97,20 @@ export default class CanvasController {
 
       canvas.onmousemove = (event: MouseEvent): void => {
         if (this.clicked) {
-          let { x: angleX, y: angleY } = this.tiltAngle;
+          let { x: angleX, y: angleY } = this.rotationAngle;
           const { clientX, clientY } = event;
           const { x: cursorX, y: cursorY } = this.cursorPosition;
 
-          this.tiltAngle.x = angleX + ((clientX >= cursorX ? 1 : -1) * Math.abs(clientX - cursorX) / 200);
-          this.tiltAngle.y = angleY + ((clientY >= cursorY ? 1 : -1) * Math.abs(clientY - cursorY) / 200);
+          this.rotationAngle.x = angleX + ((clientX >= cursorX ? 1 : -1) *
+            Math.abs(clientX - cursorX) * defaultRotationAngleStep);
+          this.rotationAngle.y = angleY + ((clientY >= cursorY ? 1 : -1) *
+            Math.abs(clientY - cursorY) * defaultRotationAngleStep);
           this.cursorPosition = { x: clientX, y: clientY };
 
-          const matWorldUniformLocation = gl.getUniformLocation(program, 'matWorld');
+          const { matWorld: matWorldUniformLocation } = programInfo.uniformLocations;
 
           if (matWorldUniformLocation === null) {
-            console.error('Something went wrong while enabling the rotation feature');
+            console.error('Couldn\'t get the world matrix uniform location while enabling the rotation feature');
             return;
           }
 
@@ -107,8 +121,8 @@ export default class CanvasController {
 
           mat4.identity(identityMatrix);
 
-          mat4.rotate(yRotationMatrix, identityMatrix, angleX, [0, 1, 0]);
-          mat4.rotate(xRotationMatrix, identityMatrix, angleY, [1, 0, 0]);
+          mat4.rotate(yRotationMatrix, identityMatrix, this.rotationAngle.x, [0, 1, 0]);
+          mat4.rotate(xRotationMatrix, identityMatrix, this.rotationAngle.y, [1, 0, 0]);
           mat4.mul(worldMatrix, xRotationMatrix, yRotationMatrix);
 
           gl.uniformMatrix4fv(matWorldUniformLocation, false, worldMatrix);
@@ -126,7 +140,8 @@ export default class CanvasController {
       if (objectData === null || gl === null || programInfo === null) {
         throw new Error('One of the required properties is null');
       }
-
+      console.log('OBJECT DATA', objectData);
+      const { normals } = objectData;
       const { vertNormal: vertNormalLocation } = programInfo.attribLocations;
       const {
         ambientLightIntensity: ambientLightIntensityUL,
@@ -134,27 +149,25 @@ export default class CanvasController {
         sunlightDirection: sunlightDirectionUL,
       } = programInfo.uniformLocations;
 
-      const ambientLightIntensity = [0.1, 0.1, 0.3];
-      const sunlightIntensity = [1, 1, 1];
-      const sunlightDirection = new Float32Array([-1.5, 1.75, -3]); // type cast of number[] to Float32Array
-      let normalizedSunlightDirection = vec3.normalize(new Float32Array(3), sunlightDirection);
+      const ambientLightIntensity = [0.7, 0.7, 0.7];
+      const sunlightIntensity = [0.9, 0.9, 0.9];
+      const sunlightDirection = [3, 4, -7];
+      const normalizedSunlightDirection = vec3.normalize(vec3.create(), new Float32Array(sunlightDirection));
 
-      const vertexNormals = this.generateNormals(objectData);
-
-      if (vertexNormals === null) {
+      if (!Array.isArray(normals)) {
         throw new Error('Couldn\'t generate the normals for an object, lighting feature is disabled!')
       }
 
       const normalBuffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
       gl.vertexAttribPointer(
 				vertNormalLocation, // Attribute location
 				3, // Number of elements per attribute
 				gl.FLOAT, // Type of elements
 				true,
-				3 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
-				0 // Offset from the beginning of a single vertex to this attribute
+        3 * Float32Array.BYTES_PER_ELEMENT, // Size of an individual vertex
+				0, // Offset from the beginning of a single vertex to this attribute
 			);
       gl.enableVertexAttribArray(vertNormalLocation);
 
@@ -167,52 +180,29 @@ export default class CanvasController {
     }
   }
 
-  private generateNormals (objectData: ObjectData): number[] | null {
-    try {
-      // TO BE IMPLEMENTED
-      const normals = [
-        // Top
-        0.0,  1.0,  0.0,
-        0.0,  1.0,  0.0,
-        0.0,  1.0,  0.0,
-        0.0,  1.0,  0.0,
+  // translateModelToCenter () {
+  //   const { objectData, programInfo, gl, program } = this.canvasInstance;
 
-        // Left
-        -1.0,  0.0,  0.0,
-        -1.0,  0.0,  0.0,
-        -1.0,  0.0,  0.0,
-        -1.0,  0.0,  0.0,
-    
-        // Right
-        1.0,  0.0,  0.0,
-        1.0,  0.0,  0.0,
-        1.0,  0.0,  0.0,
-        1.0,  0.0,  0.0,
+  //   if (objectData === null || programInfo === null || gl === null || program === null) {
+  //     throw new Error('One of the required properties is null');
+  //   }
 
-        // Front
-        0.0,  0.0,  1.0,
-        0.0,  0.0,  1.0,
-        0.0,  0.0,  1.0,
-        0.0,  0.0,  1.0,
-    
-        // Back
-        0.0,  0.0, -1.0,
-        0.0,  0.0, -1.0,
-        0.0,  0.0, -1.0,
-        0.0,  0.0, -1.0,
+  //   const { matWorld: matWorldUniformLocation } = programInfo.uniformLocations;
 
-        // Bottom
-        0.0, -1.0,  0.0,
-        0.0, -1.0,  0.0,
-        0.0, -1.0,  0.0,
-        0.0, -1.0,  0.0,
-      ];
+  //   if (matWorldUniformLocation === null) {
+  //     console.error('Couldn\'t get the view matrix uniform location while centering the model');
+  //     return;
+  //   }
 
-      return normals;
-    } catch (error) {
-      console.error(error);
+  //   const { vertices } = objectData;
+  //   const centerOfModel = getCenterOfModel(vertices).map((el) => el * -1);
 
-      return null;
-    }
-  }
+  //   let worldMatrix = gl.getUniform(program, matWorldUniformLocation);
+  //   // mat4.lookAt(worldMatrix, [-3, 2, -15], [5, 20, 30], [0, 1, 0]);
+  //   // let viewMatrix = gl.getUniform(program, matViewUniformLocation);
+  //   // mat4.fromTranslation(viewMatrix, new Float32Array(centerOfModel));
+  //   mat4.translate(worldMatrix, worldMatrix, new Float32Array(centerOfModel));
+
+  //   gl.uniformMatrix4fv(matWorldUniformLocation, false, worldMatrix);
+  // }
 }
